@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Turing Machine Simulator | Theory of Computation</title>
+  <meta name="description"
+    content="An interactive Turing Machine simulator for Theory of Computation. Visualize states, transitions, and tape operations in real-time." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@700;900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- Animated background -->
+  <div class="bg-grid"></div>
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⚙</span>
+        <div>
+          <div class="logo-title">Turing Machine</div>
+          <div class="logo-sub">Theory of Computation Simulator</div>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-toc">TOC Project</span>
+        <span class="badge badge-live" id="status-badge">● IDLE</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-layout">
+
+    <!-- LEFT PANEL: Controls & Configuration -->
+    <aside class="panel panel-left">
+
+      <!-- Preset Programs -->
+      <section class="card" id="presets-card">
+        <div class="card-header">
+          <span class="card-icon">🧩</span>
+          <h2 class="card-title">Preset Programs</h2>
+        </div>
+        <div class="preset-grid">
+          <button class="preset-btn active" id="preset-palindrome" onclick="loadPreset('palindrome')">
+            <span class="preset-icon">🔁</span>
+            <span class="preset-name">Palindrome Checker</span>
+            <span class="preset-desc">Even-length 0s&1s</span>
+          </button>
+          <button class="preset-btn" id="preset-binary-inc" onclick="loadPreset('binary-inc')">
+            <span class="preset-icon">➕</span>
+            <span class="preset-name">Binary Increment</span>
+            <span class="preset-desc">Add 1 to binary</span>
+          </button>
+          <button class="preset-btn" id="preset-unary-add" onclick="loadPreset('unary-add')">
+            <span class="preset-icon">∑</span>
+            <span class="preset-name">Unary Addition</span>
+            <span class="preset-desc">1^m + 1^n = 1^(m+n)</span>
+          </button>
+          <button class="preset-btn" id="preset-even-zeros" onclick="loadPreset('even-zeros')">
+            <span class="preset-icon">⚡</span>
+            <span class="preset-name">Even Zeros</span>
+            <span class="preset-desc">Accept even # of 0s</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Input Configuration -->
+      <section class="card" id="config-card">
+        <div class="card-header">
+          <span class="card-icon">⚙️</span>
+          <h2 class="card-title">Configuration</h2>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tape Input</label>
+          <div class="input-row">
+            <input type="text" id="tape-input" class="form-input" placeholder="e.g. 0110" value="0110" />
+            <button class="btn btn-ghost" onclick="resetMachine()" title="Reset">↺</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Initial State</label>
+          <input type="text" id="initial-state" class="form-input" value="q0" readonly />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Accept State</label>
+            <input type="text" id="accept-state" class="form-input" value="qA" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reject State</label>
+            <input type="text" id="reject-state" class="form-input" value="qR" readonly />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Blank Symbol</label>
+          <input type="text" id="blank-symbol" class="form-input" value="B" readonly />
+        </div>
+      </section>
+
+      <!-- Playback Controls -->
+      <section class="card" id="controls-card">
+        <div class="card-header">
+          <span class="card-icon">▶️</span>
+          <h2 class="card-title">Controls</h2>
+        </div>
+        <div class="control-buttons">
+          <button class="btn btn-primary" id="btn-play" onclick="togglePlay()">
+            <span id="play-icon">▶</span> <span id="play-text">Play</span>
+          </button>
+          <button class="btn btn-secondary" id="btn-step" onclick="stepMachine()">⏭ Step</button>
+          <button class="btn btn-danger" id="btn-reset" onclick="resetMachine()">⏹ Reset</button>
+        </div>
+        <div class="speed-control">
+          <label class="form-label">Speed: <span id="speed-label">500ms</span></label>
+          <input type="range" id="speed-slider" class="slider" min="50" max="1500" value="500" step="50"
+            oninput="updateSpeed(this.value)" />
+          <div class="speed-labels">
+            <span>Fast</span><span>Slow</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stats -->
+      <section class="card" id="stats-card">
+        <div class="card-header">
+          <span class="card-icon">📊</span>
+          <h2 class="card-title">Statistics</h2>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value" id="stat-steps">0</div>
+            <div class="stat-label">Steps</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="stat-states">0</div>
+            <div class="stat-label">States</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="stat-transitions">0</div>
+            <div class="stat-label">Transitions</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="stat-head">0</div>
+            <div class="stat-label">Head Pos</div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- CENTER: Tape + State Diagram -->
+    <div class="panel panel-center">
+
+      <!-- Tape Visualization -->
+      <section class="card tape-card" id="tape-card">
+        <div class="card-header">
+          <span class="card-icon">📼</span>
+          <h2 class="card-title">Infinite Tape</h2>
+          <div class="current-state-display">
+            State: <span class="state-pill" id="display-state">q0</span>
+          </div>
+        </div>
+        <div class="tape-container" id="tape-container">
+          <div class="tape-wrapper">
+            <div class="tape-track" id="tape-track"></div>
+          </div>
+          <div class="head-marker">
+            <div class="head-arrow">▼</div>
+            <div class="head-label">HEAD</div>
+          </div>
+        </div>
+        <div class="tape-info">
+          <div class="tape-hint">← Tape extends infinitely in both directions →</div>
+        </div>
+      </section>
+
+      <!-- Result Banner -->
+      <div class="result-banner" id="result-banner" style="display:none">
+        <div class="result-icon" id="result-icon">✓</div>
+        <div class="result-text" id="result-text">ACCEPTED</div>
+      </div>
+
+      <!-- State Transition Diagram -->
+      <section class="card diagram-card" id="diagram-card">
+        <div class="card-header">
+          <span class="card-icon">🔀</span>
+          <h2 class="card-title">State Transition Diagram</h2>
+        </div>
+        <div class="diagram-container">
+          <canvas id="state-canvas" width="700" height="320"></canvas>
+        </div>
+      </section>
+
+      <!-- Transition Table -->
+      <section class="card table-card" id="table-card">
+        <div class="card-header">
+          <span class="card-icon">📋</span>
+          <h2 class="card-title">Transition Function δ(q, σ) → (q', σ', D)</h2>
+        </div>
+        <div class="table-wrapper">
+          <table class="transition-table" id="transition-table">
+            <thead>
+              <tr>
+                <th>Current State (q)</th>
+                <th>Read Symbol (σ)</th>
+                <th>Write Symbol (σ')</th>
+                <th>Move (D)</th>
+                <th>Next State (q')</th>
+              </tr>
+            </thead>
+            <tbody id="transition-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT PANEL: Log & Theory -->
+    <aside class="panel panel-right">
+
+      <!-- Computation History -->
+      <section class="card log-card" id="log-card">
+        <div class="card-header">
+          <span class="card-icon">📜</span>
+          <h2 class="card-title">Computation Log</h2>
+          <button class="btn btn-ghost btn-sm" onclick="clearLog()">Clear</button>
+        </div>
+        <div class="log-container" id="log-container">
+          <div class="log-empty">Run the machine to see computation steps...</div>
+        </div>
+      </section>
+
+      <!-- Theory Panel -->
+      <section class="card theory-card" id="theory-card">
+        <div class="card-header">
+          <span class="card-icon">📚</span>
+          <h2 class="card-title">Theory</h2>
+        </div>
+        <div class="theory-content" id="theory-content">
+          <div class="theory-section">
+            <h3>Formal Definition</h3>
+            <p>A Turing Machine is a 7-tuple:</p>
+            <div class="math-block">M = (Q, Σ, Γ, δ, q₀, qₐ, qᵣ)</div>
+          </div>
+          <div class="theory-section">
+            <h3>Components</h3>
+            <ul class="theory-list">
+              <li><span class="theory-sym">Q</span> — Finite set of states</li>
+              <li><span class="theory-sym">Σ</span> — Input alphabet (no blank)</li>
+              <li><span class="theory-sym">Γ</span> — Tape alphabet (Σ ⊆ Γ)</li>
+              <li><span class="theory-sym">δ</span> — Transition function</li>
+              <li><span class="theory-sym">q₀</span> — Initial state</li>
+              <li><span class="theory-sym">qₐ</span> — Accept state</li>
+              <li><span class="theory-sym">qᵣ</span> — Reject state</li>
+            </ul>
+          </div>
+          <div class="theory-section">
+            <h3>Transition Function</h3>
+            <div class="math-block">δ: Q × Γ → Q × Γ × {L, R}</div>
+            <p>Given current state and tape symbol, the machine writes a symbol, moves left/right, and transitions to a
+              new state.</p>
+          </div>
+          <div class="theory-section">
+            <h3>Church-Turing Thesis</h3>
+            <p>Any effectively computable function can be computed by a Turing Machine — it represents the ultimate
+              model of computation.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ID Display -->
+      <section class="card id-card" id="id-card">
+        <div class="card-header">
+          <span class="card-icon">🔢</span>
+          <h2 class="card-title">Instantaneous Description</h2>
+        </div>
+        <div class="id-display" id="id-display">
+          <span class="id-mono">— Not started —</span>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>Turing Machine Simulator</span>
+      <span class="footer-sep">•</span>
+      <span>Theory of Computation — SEM 4</span>
+      <span class="footer-sep">•</span>
+      <span>Alan Turing (1936)</span>
+    </div>
+  </footer>
+
+  <script src="tm.js"></script>
+</body>
+
+</html>
